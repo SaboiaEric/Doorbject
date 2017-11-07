@@ -1,0 +1,7 @@
+Ordem de execução
+main
+construtor
+init
+reshap
+looping
+	display
