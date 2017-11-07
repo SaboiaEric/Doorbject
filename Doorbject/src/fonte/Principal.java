@@ -35,7 +35,7 @@ public class Principal implements GLEventListener, KeyListener {
     double eqn[] = {-0.15, 0.15, 0, 0};
 
     //Informações sobre a tela
-    private boolean up, down, shot;
+    private boolean up, down, shoot, right, left;
 
     public Principal() {
         GLJPanel canvas = new GLJPanel();
@@ -95,7 +95,8 @@ public class Principal implements GLEventListener, KeyListener {
         gl.glEnable(GL.GL_DEPTH_TEST);
     }
 
-    double g = -10, g2, inc = 0.2;
+    double g = -10, g2, inc = 0.05;
+    double posHorizontal = 0;
 
     public void display(GLAutoDrawable gLAutoDrawable) {
 
@@ -105,7 +106,7 @@ public class Principal implements GLEventListener, KeyListener {
 
         gl.glLoadIdentity();
 
-        gl.glTranslated(0, 0, g);
+        gl.glTranslated(posHorizontal, 0, g);
 
         //Seta a cor do objeto
         gl.glColor3f(0, 1, 0);
@@ -120,9 +121,20 @@ public class Principal implements GLEventListener, KeyListener {
         //glut.glutSolidTeapot(1);
         glut.glutSolidCube(1);
 
-        if (shot) {
-            g -= 20;
+        if (up) {
+            g -= inc;
         }
+        if(down){
+            g+=inc;
+        }
+        if(right){
+            posHorizontal+=inc;
+        }
+        if(left)
+        {
+            posHorizontal -=inc;
+        }
+        
 
     }
 
@@ -164,8 +176,16 @@ public class Principal implements GLEventListener, KeyListener {
             down = true;
         }
 
+        if (ke.getKeyCode() == KeyEvent.VK_RIGHT) {
+            right = true;
+        }
+
+        if (ke.getKeyCode() == KeyEvent.VK_LEFT) {
+            left = true;
+        }
+
         if (ke.getKeyCode() == KeyEvent.VK_SPACE || ke.getKeyCode() == KeyEvent.VK_ENTER) {
-            shot = true;
+            shoot = true;
         }
     }
 
@@ -178,9 +198,17 @@ public class Principal implements GLEventListener, KeyListener {
         if (ke.getKeyCode() == KeyEvent.VK_DOWN) {
             down = false;
         }
+        
+        if (ke.getKeyCode() == KeyEvent.VK_RIGHT) {
+            right = false;
+        }
+
+        if (ke.getKeyCode() == KeyEvent.VK_LEFT) {
+            left = false;
+        }
 
         if (ke.getKeyCode() == KeyEvent.VK_SPACE || ke.getKeyCode() == KeyEvent.VK_ENTER) {
-            shot = false;
+            shoot = false;
         }
     }
 }
