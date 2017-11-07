@@ -105,11 +105,13 @@ public class Principal implements GLEventListener, KeyListener {
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
         gl.glLoadIdentity();
-
-        gl.glTranslated(posHorizontal, 0, g);
-
         //Seta a cor do objeto
         gl.glColor3f(0, 1, 0);
+
+        gl.glPushMatrix();
+
+        gl.glPushMatrix();
+        gl.glTranslated(posHorizontal, 0, g);
 
         //Faz a rotação do objeto
         //X = direita, esquerda
@@ -121,20 +123,32 @@ public class Principal implements GLEventListener, KeyListener {
         //glut.glutSolidTeapot(1);
         glut.glutSolidCube(1);
 
-        if (up) {
-            g -= inc;
+        gl.glPopMatrix();
+        gl.glPopMatrix();
+
+        //Não pode se movimentar porque fica fora da tela
+        if (g < -30 || g > -2) {
+            if(g < -30){
+                g = -30;
+            }
+            else if(g > -2){
+                g = -2;
+            }
         }
-        if(down){
-            g+=inc;
+        else{
+            if (up) {
+                g -= inc;
+            }
+            if (down) {
+                g += inc;
+            }
         }
-        if(right){
-            posHorizontal+=inc;
+        if (right) {
+            posHorizontal += inc;
         }
-        if(left)
-        {
-            posHorizontal -=inc;
+        if (left) {
+            posHorizontal -= inc;
         }
-        
 
     }
 
@@ -163,7 +177,7 @@ public class Principal implements GLEventListener, KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) {
-        
+
     }
 
     @Override
@@ -198,7 +212,7 @@ public class Principal implements GLEventListener, KeyListener {
         if (ke.getKeyCode() == KeyEvent.VK_DOWN) {
             down = false;
         }
-        
+
         if (ke.getKeyCode() == KeyEvent.VK_RIGHT) {
             right = false;
         }
