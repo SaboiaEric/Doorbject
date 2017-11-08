@@ -99,31 +99,36 @@ public class Principal implements GLEventListener, KeyListener {
     double posHorizontal = 0;
 
     public void display(GLAutoDrawable gLAutoDrawable) {
-
+        
         GL2 gl = gLAutoDrawable.getGL().getGL2();
-
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
-
         gl.glLoadIdentity();
         //Seta a cor do objeto
         gl.glColor3f(0, 1, 0);
+        //gl.glPushMatrix();
 
-        gl.glPushMatrix();
+            gl.glPushMatrix();
+                gl.glTranslated(posHorizontal, 0, g);
 
-        gl.glPushMatrix();
-        gl.glTranslated(posHorizontal, 0, g);
+                //Faz a rotação do objeto
+                //X = direita, esquerda
+                //Y = cima, baixo
+                gl.glRotated(rot++, 1, 1, distancia); //angulo, x,y,z
 
-        //Faz a rotação do objeto
-        //X = direita, esquerda
-        //Y = cima, baixo
-        gl.glRotated(rot++, 1, 1, distancia); //angulo, x,y,z
+                //gl.glRotated(rot,distancia,1,0);
+                //glut.glutSolidSphere(1,50,50);
+                //glut.glutSolidTeapot(1);
+                glut.glutSolidCube(1);
 
-        //gl.glRotated(rot,distancia,1,0);
-        //glut.glutSolidSphere(1,50,50);
-        //glut.glutSolidTeapot(1);
-        glut.glutSolidCube(1);
-
-        gl.glPopMatrix();
+            gl.glPopMatrix();
+           
+            /*
+            gl.glPushMatrix();
+                gl.glTranslated(posHorizontal, 0, g-5);
+                glut.glutSolidSphere(1,50,50);
+            gl.glPopMatrix();
+            */
+            
         gl.glPopMatrix();
 
         //Não pode se movimentar porque fica fora da tela
@@ -143,10 +148,11 @@ public class Principal implements GLEventListener, KeyListener {
                 g += inc;
             }
         }
-        if (right) {
+        
+        if (right && posHorizontal <= 16) {
             posHorizontal += inc;
         }
-        if (left) {
+        if (left && posHorizontal >= -16) {
             posHorizontal -= inc;
         }
 
