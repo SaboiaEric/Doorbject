@@ -101,7 +101,7 @@ public class Principal implements GLEventListener, KeyListener {
     }
 
     public void display(GLAutoDrawable gLAutoDrawable) {
-
+        
         GL2 gl = gLAutoDrawable.getGL().getGL2();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
         gl.glLoadIdentity();
@@ -109,55 +109,13 @@ public class Principal implements GLEventListener, KeyListener {
         gl.glColor3f(0, 1, 0);
         //gl.glPushMatrix();
 
-        gl.glPushMatrix();
-        gl.glTranslated(posHorizontal, 0, g);
-        //Faz a rotação do objeto
-        //X = direita, esquerda
-        //Y = cima, baixo
-        gl.glRotated(rot++, 1, 1, distancia); //angulo, x,y,z
-        //gl.glRotated(rot,distancia,1,0);
-        //glut.glutSolidSphere(1,50,50);
-        //glut.glutSolidTeapot(1);
-        glut.glutSolidCube(1);
-
-        gl.glPopMatrix();
-
+        gl = CriaPersonagem(gl);
+        gl = CriaInimigos(gl);
+        VerificaLimitacoesTela();
+        VerificaConflitoPersonagemInimigo() ;
         
-        gl.glPushMatrix();
-        gl.glTranslated(TorusPosX, TorusPosY, TorusPosZ);
-        glut.glutSolidTorus(0.1,2.0,30,30);
-        gl.glPopMatrix();
         
-        gl.glPushMatrix();
-        gl.glTranslated(TorusPosX, TorusPosY, TorusPosZ-10);
-        glut.glutSolidTorus(0.1,2.0,30,30);
-        gl.glPopMatrix();
-        TorusPosZ += inc/2;
-         
-        //personagem não pode se movimentar porque fica fora da tela
-        if (g < -30 || g > -2) {
-            if (g < -30) g = -30;
-            if (g > -2)  g = -2;
-        } else {
-            if (up) g -= inc;
-            if (down) g += inc;
-        }        
-        if (right && posHorizontal <= 16) posHorizontal += inc;
-        if (left && posHorizontal >= -16) posHorizontal -= inc;
-        
-        //Verifica se a barreira está no mesmo nível que o personagem
-        if( (int)g == (int)TorusPosZ) contPontos++;
-        
-        //Reiniciar o inimigo
-        if(TorusPosZ >= 0){
-            TorusPosZ = -30;
-            /*Se o contador de pontos for maior que 0, quer dizer que o personagem
-             passou dentro do inimigo e isso deve contar ponto*/
-            if(contPontos > 0) {
-                pontos++;
-                contPontos = 0;
-            }
-        }
+        ReiniciaJogo();      
         
     }
 
@@ -233,5 +191,67 @@ public class Principal implements GLEventListener, KeyListener {
         if (ke.getKeyCode() == KeyEvent.VK_SPACE || ke.getKeyCode() == KeyEvent.VK_ENTER) {
             shoot = false;
         }
+    }
+    
+    private GL2 CriaPersonagem(GL2 g1){
+        gl.glPushMatrix();
+        gl.glTranslated(posHorizontal, 0, g);
+        //Faz a rotação do objeto
+        //X = direita, esquerda
+        //Y = cima, baixo
+        gl.glRotated(rot++, 1, 1, distancia); //angulo, x,y,z
+        //gl.glRotated(rot,distancia,1,0);
+        //glut.glutSolidSphere(1,50,50);
+        //glut.glutSolidTeapot(1);
+        glut.glutSolidCube(1);
+
+        gl.glPopMatrix();
+        return gl;
+    }
+    
+    private GL2 CriaInimigos(GL2 gl){
+        gl.glPushMatrix();
+        gl.glTranslated(TorusPosX, TorusPosY, TorusPosZ);
+        glut.glutSolidTorus(0.1,2.0,30,30);
+        gl.glPopMatrix();
+        
+        gl.glPushMatrix();
+        gl.glTranslated(TorusPosX, TorusPosY, TorusPosZ-10);
+        glut.glutSolidTorus(0.1,2.0,30,30);
+        gl.glPopMatrix();
+        TorusPosZ += inc/2;
+        
+        return gl;
+    }
+    
+    private void VerificaLimitacoesTela(){
+        //personagem não pode se movimentar porque fica fora da tela
+        if (g < -30 || g > -2) {
+            if (g < -30) g = -30;
+            if (g > -2)  g = -2;
+        } else {
+            if (up) g -= inc;
+            if (down) g += inc;
+        }        
+        if (right && posHorizontal <= 16) posHorizontal += inc;
+        if (left && posHorizontal >= -16) posHorizontal -= inc;        
+    }
+    
+    private void ReiniciaJogo(){
+        //Reiniciar o inimigo
+        if(TorusPosZ >= 0){
+            TorusPosZ = -30;
+            /*Se o contador de pontos for maior que 0, quer dizer que o personagem
+             passou dentro do inimigo e isso deve contar ponto*/
+            if(contPontos > 0) {
+                pontos++;
+                contPontos = 0;
+            }
+        }
+    }
+    
+    private void VerificaConflitoPersonagemInimigo(){
+        //Verifica se a barreira está no mesmo nível que o personagem
+        if( (int)g == (int)TorusPosZ) contPontos++;
     }
 }
