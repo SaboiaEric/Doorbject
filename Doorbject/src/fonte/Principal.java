@@ -33,6 +33,11 @@ public class Principal implements GLEventListener, KeyListener {
     float especularidade[] = {1.0f, 0.0f, 0.0f, 1.0f};
     int especMaterial = 60;
     double eqn[] = {-0.15, 0.15, 0, 0};
+    double g = -10, g2, inc = 0.05;
+    double posHorizontal = 0;
+    double TorusPosX = 0,TorusPosY = 0,TorusPosZ = -45;
+    int contPontos = 0, pontos = 0;
+    
 
     //Informações sobre a tela
     private boolean up, down, shoot, right, left;
@@ -95,11 +100,8 @@ public class Principal implements GLEventListener, KeyListener {
         gl.glEnable(GL.GL_DEPTH_TEST);
     }
 
-    double g = -10, g2, inc = 0.05;
-    double posHorizontal = 0;
-
     public void display(GLAutoDrawable gLAutoDrawable) {
-        
+
         GL2 gl = gLAutoDrawable.getGL().getGL2();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
         gl.glLoadIdentity();
@@ -107,55 +109,56 @@ public class Principal implements GLEventListener, KeyListener {
         gl.glColor3f(0, 1, 0);
         //gl.glPushMatrix();
 
-            gl.glPushMatrix();
-                gl.glTranslated(posHorizontal, 0, g);
+        gl.glPushMatrix();
+        gl.glTranslated(posHorizontal, 0, g);
+        //Faz a rotação do objeto
+        //X = direita, esquerda
+        //Y = cima, baixo
+        gl.glRotated(rot++, 1, 1, distancia); //angulo, x,y,z
+        //gl.glRotated(rot,distancia,1,0);
+        //glut.glutSolidSphere(1,50,50);
+        //glut.glutSolidTeapot(1);
+        glut.glutSolidCube(1);
 
-                //Faz a rotação do objeto
-                //X = direita, esquerda
-                //Y = cima, baixo
-                gl.glRotated(rot++, 1, 1, distancia); //angulo, x,y,z
-
-                //gl.glRotated(rot,distancia,1,0);
-                //glut.glutSolidSphere(1,50,50);
-                //glut.glutSolidTeapot(1);
-                glut.glutSolidCube(1);
-
-            gl.glPopMatrix();
-           
-            /*
-            gl.glPushMatrix();
-                gl.glTranslated(posHorizontal, 0, g-5);
-                glut.glutSolidSphere(1,50,50);
-            gl.glPopMatrix();
-            */
-            
         gl.glPopMatrix();
 
-        //Não pode se movimentar porque fica fora da tela
+        
+        gl.glPushMatrix();
+        gl.glTranslated(TorusPosX, TorusPosY, TorusPosZ);
+        glut.glutSolidTorus(0.1,2.0,30,30);
+        gl.glPopMatrix();
+        
+        gl.glPushMatrix();
+        gl.glTranslated(TorusPosX, TorusPosY, TorusPosZ-10);
+        glut.glutSolidTorus(0.1,2.0,30,30);
+        gl.glPopMatrix();
+        TorusPosZ += inc/2;
+         
+        //personagem não pode se movimentar porque fica fora da tela
         if (g < -30 || g > -2) {
-            if(g < -30){
-                g = -30;
-            }
-            else if(g > -2){
-                g = -2;
-            }
-        }
-        else{
-            if (up) {
-                g -= inc;
-            }
-            if (down) {
-                g += inc;
+            if (g < -30) g = -30;
+            if (g > -2)  g = -2;
+        } else {
+            if (up) g -= inc;
+            if (down) g += inc;
+        }        
+        if (right && posHorizontal <= 16) posHorizontal += inc;
+        if (left && posHorizontal >= -16) posHorizontal -= inc;
+        
+        //Verifica se a barreira está no mesmo nível que o personagem
+        if( (int)g == (int)TorusPosZ) contPontos++;
+        
+        //Reiniciar o inimigo
+        if(TorusPosZ >= 0){
+            TorusPosZ = -30;
+            /*Se o contador de pontos for maior que 0, quer dizer que o personagem
+             passou dentro do inimigo e isso deve contar ponto*/
+            if(contPontos > 0) {
+                pontos++;
+                contPontos = 0;
             }
         }
         
-        if (right && posHorizontal <= 16) {
-            posHorizontal += inc;
-        }
-        if (left && posHorizontal >= -16) {
-            posHorizontal -= inc;
-        }
-
     }
 
     public void reshape(GLAutoDrawable gLAutoDrawable, int x, int y, int w, int h) {
