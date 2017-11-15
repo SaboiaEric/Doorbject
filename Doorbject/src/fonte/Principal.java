@@ -1,13 +1,21 @@
 package fonte;
 
 import com.jogamp.opengl.util.Animator;
+import com.jogamp.opengl.util.awt.TextRenderer;
 import com.jogamp.opengl.util.gl2.GLUT;
+import java.awt.Color;
+import java.awt.Font;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Random;
 import javax.media.opengl.*;
+import static javax.media.opengl.GL.GL_BLEND;
+import static javax.media.opengl.GL.GL_ONE_MINUS_SRC_ALPHA;
+import static javax.media.opengl.GL.GL_SRC_ALPHA;
 import javax.media.opengl.awt.GLJPanel;
+import static javax.media.opengl.fixedfunc.GLLightingFunc.GL_COLOR_MATERIAL;
 import javax.media.opengl.glu.GLU;
 import javax.swing.JFrame;
 
@@ -21,8 +29,8 @@ public class Principal implements GLEventListener, KeyListener {
     GLU glu = new GLU();
     GLJPanel canvas = new GLJPanel();
     GL2 gl;
-    float rot, distancia = 0.0f;
-
+    TextRenderer textRenderer;
+    
     //Informacoes sobre a luz
     float luzAmbiente[] = {0.2f, 0.2f, 0.2f, 1.0f};
     float luzDifusa[] = {1.0f, 1.0f, 1.0f, 1.0f};	   // "cor"
@@ -33,15 +41,31 @@ public class Principal implements GLEventListener, KeyListener {
     float especularidade[] = {1.0f, 0.0f, 0.0f, 1.0f};
     int especMaterial = 60;
     double eqn[] = {-0.15, 0.15, 0, 0};
-    double g = -10, g2, inc = 0.05;
-    double posHorizontal = 0;
-    double TorusPosX = 0,TorusPosY = 0,TorusPosZ = -45;
-    int contPontos = 0, pontos = 0;
     
-
-    //Informações sobre a tela
-    private boolean up, down, shoot, right, left;
-
+    
+    // variaveis referentes ao jogo
+    int qtdVidas = 3;
+    int pontos = 0;
+    GameState gameState;
+    CircleType circleType;
+    boolean canPress;
+    boolean indicate;
+    
+    // variavel utilizada para marcar pontos
+    boolean scored;
+    
+    
+    // variaveis referentes aos desenhos
+    float rot, distancia = 0.0f;
+    double incblend = 0.05, blend = 0;
+    double x = 0, y = 0;
+    double incx = 0;
+    double incy = 0;    
+    double inc = 0.05;
+    double TorusPosZ = -15;
+    int r, g, b;
+    
+    
     public Principal() {
         GLJPanel canvas = new GLJPanel();
 
@@ -98,6 +122,14 @@ public class Principal implements GLEventListener, KeyListener {
         gl.glEnable(GL2.GL_LIGHT1);
         // Habilita o depth-buffering
         gl.glEnable(GL.GL_DEPTH_TEST);
+        
+        
+        
+        // inicializa
+        criaProximoCirculo();
+        gameState = GameState.Menu;
+        textRenderer = new TextRenderer(new Font("Verdana", Font.BOLD, 50));
+
     }
 
     public void display(GLAutoDrawable gLAutoDrawable) {
@@ -105,18 +137,64 @@ public class Principal implements GLEventListener, KeyListener {
         GL2 gl = gLAutoDrawable.getGL().getGL2();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
         gl.glLoadIdentity();
-        //Seta a cor do objeto
-        gl.glColor3f(0, 1, 0);
-        //gl.glPushMatrix();
 
-        gl = CriaPersonagem(gl);
-        gl = CriaInimigos(gl);
-        VerificaLimitacoesTela();
-        VerificaConflitoPersonagemInimigo() ;
+        switch (gameState) {
+            case Menu:
+                desenhaTexto("DOORBJECT", 80, 300, 1, Color.RED);
+                desenhaTexto("Aperte V para iniciar", 120, 270, 0.4f, Color.DARK_GRAY);
+                desenhaTexto("COMANDOS:", 120, 200, 0.5f, Color.RED);
+                desenhaTexto("Aperte Z para VERMELHO", 120, 160, 0.4f, Color.RED);
+                desenhaTexto("Aperte X para VERDE", 120, 140, 0.4f, Color.GREEN);
+                desenhaTexto("Aperte C para AZUL", 120, 120, 0.4f, Color.BLUE);
+                break;
+            case InGame:
+                desenhaTexto(pontos + " pontos", 10, 10, 0.4f, Color.DARK_GRAY);
+                desenhaVidas(gl);
+                desenhaCirculos(gl);
+                break;
+            case GameOver:
+                blend = 1;
+                desenhaTexto("PONTUAÇÃO:", 60, 350, 0.4f, Color.BLACK);
+                desenhaTexto(pontos + " pontos", 60, 300, 0.8f, Color.DARK_GRAY);
+                desenhaTexto("VOCÊ PERDEU", 60, 200, 1, Color.RED);
+                desenhaTexto("Aperte V para continuar", 120, 170, 0.4f, Color.DARK_GRAY);
+                break;
+        }
+        
+        if(indicate)
+        {
+            gl.glPushMatrix();                    
+            gl.glEnable(GL_BLEND);
+            gl.glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+            gl.glColor4f(r, g, b, (float)(blend+=incblend));
+            gl.glTranslated(0, 0, -10.0);
+            gl.glBegin(GL2.GL_QUADS);
+            gl.glVertex3d(250, 250, 1);
+            gl.glVertex3d(250, -250, 1);
+            gl.glVertex3d(-250, -250, 1);
+            gl.glVertex3d(-250, 250, 1);
+            gl.glEnd();
+            gl.glDisable(GL_BLEND);
+            gl.glPopMatrix();
+        }
+        
+        if(blend >= 1) indicate = false;
         
         
-        ReiniciaJogo();      
         
+        verificaJogo();    
+        
+    }
+    
+    private void desenhaTexto(String text, int x, int y, float fontscale, Color fontcolor)
+    {
+            textRenderer.beginRendering(500, 500);
+            textRenderer.setColor(fontcolor);
+            textRenderer.setSmoothing(true);
+
+            textRenderer.draw3D(text, (float)x, (float)y, (float)0, (float)fontscale);
+            textRenderer.endRendering(); 
+            textRenderer.flush();
     }
 
     public void reshape(GLAutoDrawable gLAutoDrawable, int x, int y, int w, int h) {
@@ -136,6 +214,7 @@ public class Principal implements GLEventListener, KeyListener {
     public static void main(String args[]) {
         Principal principal;
         principal = new Principal();
+        
     }
 
     public void dispose(GLAutoDrawable glad) {
@@ -149,109 +228,161 @@ public class Principal implements GLEventListener, KeyListener {
 
     @Override
     public void keyPressed(KeyEvent ke) {
-        if (ke.getKeyCode() == KeyEvent.VK_UP) {
-            up = true;
+        if (ke.getKeyCode() == KeyEvent.VK_V) {
+            blend = 1;
+            
+            if(gameState.equals(GameState.Menu))
+            {
+                scored = false;
+                canPress = true;
+                qtdVidas = 3;
+                pontos = 0;
+                gameState = GameState.InGame;
+            }
+            
+            if(gameState.equals(GameState.GameOver)) gameState = GameState.Menu;
         }
+        else if(canPress)
+        {
+            if (ke.getKeyCode() == KeyEvent.VK_Z) { // letra Z
+                scored = circleType.equals(CircleType.Red); // se for vermelho, marcou ponto
+            }
 
-        if (ke.getKeyCode() == KeyEvent.VK_DOWN) {
-            down = true;
+            if (ke.getKeyCode() == KeyEvent.VK_X) { // letra X
+                scored = circleType.equals(CircleType.Green); // se for verde, marcou ponto
+            }
+
+            if (ke.getKeyCode() == KeyEvent.VK_C) { // letra C
+                scored = circleType.equals(CircleType.Blue); // se for azul, marcou ponto
+            }
+
+            mostraIndicador();
         }
+    }
+    
+    private void mostraIndicador()
+    {
+        canPress = false;
+        indicate = true;
+        
+        b = 0;
+        blend = 0;
 
-        if (ke.getKeyCode() == KeyEvent.VK_RIGHT) {
-            right = true;
+        if(scored)
+        {
+            r = 0;
+            g = 1;
         }
-
-        if (ke.getKeyCode() == KeyEvent.VK_LEFT) {
-            left = true;
-        }
-
-        if (ke.getKeyCode() == KeyEvent.VK_SPACE || ke.getKeyCode() == KeyEvent.VK_ENTER) {
-            shoot = true;
+        else {
+            r = 1;
+            g = 0;                
         }
     }
 
     @Override
     public void keyReleased(KeyEvent ke) {
-        if (ke.getKeyCode() == KeyEvent.VK_UP) {
-            up = false;
-        }
-
-        if (ke.getKeyCode() == KeyEvent.VK_DOWN) {
-            down = false;
-        }
-
-        if (ke.getKeyCode() == KeyEvent.VK_RIGHT) {
-            right = false;
-        }
-
-        if (ke.getKeyCode() == KeyEvent.VK_LEFT) {
-            left = false;
-        }
-
-        if (ke.getKeyCode() == KeyEvent.VK_SPACE || ke.getKeyCode() == KeyEvent.VK_ENTER) {
-            shoot = false;
-        }
     }
     
-    private GL2 CriaPersonagem(GL2 g1){
+    private void desenhaVidas(GL2 g1){
         gl.glPushMatrix();
-        gl.glTranslated(posHorizontal, 0, g);
-        //Faz a rotação do objeto
-        //X = direita, esquerda
-        //Y = cima, baixo
-        gl.glRotated(rot++, 1, 1, distancia); //angulo, x,y,z
-        //gl.glRotated(rot,distancia,1,0);
-        //glut.glutSolidSphere(1,50,50);
-        //glut.glutSolidTeapot(1);
-        glut.glutSolidCube(1);
-
-        gl.glPopMatrix();
-        return gl;
-    }
-    
-    private GL2 CriaInimigos(GL2 gl){
-        gl.glPushMatrix();
-        gl.glTranslated(TorusPosX, TorusPosY, TorusPosZ);
-        glut.glutSolidTorus(0.1,2.0,30,30);
-        gl.glPopMatrix();
+        gl.glTranslated(10, -10, -20);
         
         gl.glPushMatrix();
-        gl.glTranslated(TorusPosX, TorusPosY, TorusPosZ-10);
-        glut.glutSolidTorus(0.1,2.0,30,30);
-        gl.glPopMatrix();
-        TorusPosZ += inc/2;
+            
+            gl.glColor3f(1, 0, 0);
         
-        return gl;
-    }
-    
-    private void VerificaLimitacoesTela(){
-        //personagem não pode se movimentar porque fica fora da tela
-        if (g < -30 || g > -2) {
-            if (g < -30) g = -30;
-            if (g > -2)  g = -2;
-        } else {
-            if (up) g -= inc;
-            if (down) g += inc;
-        }        
-        if (right && posHorizontal <= 16) posHorizontal += inc;
-        if (left && posHorizontal >= -16) posHorizontal -= inc;        
-    }
-    
-    private void ReiniciaJogo(){
-        //Reiniciar o inimigo
-        if(TorusPosZ >= 0){
-            TorusPosZ = -30;
-            /*Se o contador de pontos for maior que 0, quer dizer que o personagem
-             passou dentro do inimigo e isso deve contar ponto*/
-            if(contPontos > 0) {
-                pontos++;
-                contPontos = 0;
+            for(int i = 0; i < qtdVidas; i++)
+            {
+                gl.glPushMatrix();
+                    gl.glRotated(rot+=0.5, 1, 1, distancia);
+                    glut.glutSolidCube(1);
+                gl.glPopMatrix();
+
+                gl.glTranslated(-2, 0, 0);
             }
-        }
+        gl.glPopMatrix();
     }
     
-    private void VerificaConflitoPersonagemInimigo(){
-        //Verifica se a barreira está no mesmo nível que o personagem
-        if( (int)g == (int)TorusPosZ) contPontos++;
+    private void desenhaCirculos(GL2 gl){
+        
+        switch(circleType) 
+        {
+            case Blue:
+                gl.glColor3f(0, 0, 1);
+                break;
+            case Red:
+                gl.glColor3f(1, 0, 0);
+                break;
+            case Green:
+                gl.glColor3f(0, 1, 0);
+                break;
+        }
+        
+        gl.glPushMatrix();
+            gl.glTranslated(x, y, TorusPosZ-10.0);
+            glut.glutSolidTorus(0.1,2.0,30,30);
+        gl.glPopMatrix();
+        TorusPosZ += inc;
+        
+        // movimenta o circulo sempre em direção ao centro da 
+        if(x > 0) x -= incx;
+        else x += incx;
+        
+        if(y > 0) y -= incy;
+        else y += incy;
+    }
+        
+    private void verificaJogo(){
+        
+        
+        if(TorusPosZ >= 15){
+            
+            if(scored)
+            {
+                pontos += 10;
+            }
+            else
+            {
+                qtdVidas--;
+
+                // se a quantidade de vidas for igual a 0, GAMEOVER
+                if(qtdVidas <= 0) gameState = GameState.GameOver;
+            }            
+            
+            canPress = true;
+            scored = false;
+            criaProximoCirculo();
+        }
+        
+    }
+    
+    private void criaProximoCirculo()
+    {
+        TorusPosZ = -10;
+
+        Random r = new Random();
+
+        // Define uma posição aleatoria entre -5 e 5 para x e y
+        x = r.nextInt(10) - 5;
+        y = r.nextInt(10) - 5;
+
+        // Define um número para que o movimento em direção ao centro da tela
+        // seja suave
+        incx = Math.abs(x / 500.0);
+        incy = Math.abs(y / 500.0);
+
+        // Sorteia uma cor para o próximo circulo
+        switch(r.nextInt(3))
+        {
+            case 0:
+                circleType = CircleType.Green;
+                break;
+            case 1:
+                circleType = CircleType.Red;
+                break;
+            case 2:
+                circleType = CircleType.Blue;
+                break;
+        }
     }
 }
